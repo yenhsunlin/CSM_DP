@@ -43,8 +43,8 @@ SN2023ixf_logu_tot = np.loadtxt(BASE_DIR / 'internal_energy/u_total.txt')
 logT_axis = np.log10(np.logspace(0,15,600))
 logR_axis = np.log10(np.logspace(np.log10(5e13),np.log10(8e15),300))
 
-SN2023ixf_u_gas_interp = RegularGridInterpolator((logR_axis,logT_axis),SN2023ixf_logu_gas,method='linear', bounds_error=False, fill_value=np.nan)
-SN2023ixf_u_tot_interp = RegularGridInterpolator((logR_axis,logT_axis),SN2023ixf_logu_tot,method='linear', bounds_error=False, fill_value=np.nan)
+SN2023ixf_LS220_u_gas_interp = RegularGridInterpolator((logR_axis,logT_axis),SN2023ixf_logu_gas,method='linear', bounds_error=False, fill_value=np.nan)
+SN2023ixf_LS220_u_tot_interp = RegularGridInterpolator((logR_axis,logT_axis),SN2023ixf_logu_tot,method='linear', bounds_error=False, fill_value=np.nan)
 
 # --- Opacity --- #
 # Low T opacity table from Ferguson et al, T < 10000 K
@@ -69,25 +69,49 @@ CSDA_e_H = interp1d(np.log10(CSDA_electron[0]),np.log10(CSDA_electron[-2])) # hy
 CSDA_e_He = interp1d(np.log10(CSDA_electron[0]),np.log10(CSDA_electron[-1])) # helium
 
 # # --- Average stopping time and efficiency --- #
-avg_stop_time_eff_LS220 = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency.txt')
-logStopTime_LS220 = np.log10(avg_stop_time_eff_LS220[:, 3].reshape(7,50,30))
-AvgEfficiency_LS220 = avg_stop_time_eff_LS220[:, 4].reshape(7,50,30)
-AvgEfficiency_LS220 [AvgEfficiency_LS220  < 1e-50] = 1e-50 # some efficiency could be close to 0 and cannot be taken log10
+avg_stop_time_eff_LS220 = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_LS220.txt')
+avg_stop_time_eff_SFHo = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_SFHo.txt')
+avg_stop_time_eff_TF = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_TF.txt')
+
+logStopTime_LS220 = np.log10(avg_stop_time_eff_LS220[:, 3].reshape(7,50,35))
+logStopTime_SFHo = np.log10(avg_stop_time_eff_SFHo[:, 3].reshape(7,50,35))
+logStopTime_TF = np.log10(avg_stop_time_eff_TF[:, 3].reshape(7,50,35))
+
+AvgEfficiency_LS220 = avg_stop_time_eff_LS220[:, 4].reshape(7,50,35)
+AvgEfficiency_LS220[AvgEfficiency_LS220  < 1e-50] = 1e-50 # some efficiency could be close to 0 and cannot be taken log10
 logEfficiency_LS220 = np.log10(AvgEfficiency_LS220)
+
+AvgEfficiency_SFHo = avg_stop_time_eff_SFHo[:, 4].reshape(7,50,35)
+AvgEfficiency_SFHo[AvgEfficiency_SFHo  < 1e-50] = 1e-50 # some efficiency could be close to 0 and cannot be taken log10
+logEfficiency_SFHo = np.log10(AvgEfficiency_SFHo)
+
+AvgEfficiency_TF = avg_stop_time_eff_TF[:, 4].reshape(7,50,35)
+AvgEfficiency_TF[AvgEfficiency_TF  < 1e-50] = 1e-50 # some efficiency could be close to 0 and cannot be taken log10
+logEfficiency_TF = np.log10(AvgEfficiency_TF)
 
 # define axis
 logeps_axis = np.log10([1.5e-14,3.3e-14,1e-13,3.3e-13,1e-12,3.3e-12,1e-11])
 logmAp_axis = np.log10(np.logspace(2.99922e-02,2.7,50))
-logr_axis = np.log10(np.logspace(np.log10(5e13),np.log10(5e15),30))
+logr_axis = np.log10(np.logspace(np.log10(5e13),np.log10(8e15),35))
 # interpolation
 AvgStopTime_LS220_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logStopTime_LS220,method='linear', bounds_error=False, fill_value=np.nan)
 AvgEfficiency_LS220_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logEfficiency_LS220 ,method='linear', bounds_error=False, fill_value=np.nan)
+
+AvgStopTime_SFHo_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logStopTime_SFHo,method='linear', bounds_error=False, fill_value=np.nan)
+AvgEfficiency_SFHo_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logEfficiency_SFHo ,method='linear', bounds_error=False, fill_value=np.nan)
+
+AvgStopTime_TF_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logStopTime_TF,method='linear', bounds_error=False, fill_value=np.nan)
+AvgEfficiency_TF_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logEfficiency_TF ,method='linear', bounds_error=False, fill_value=np.nan)
 
 # --- Dark Photon Luminosity --- #
 # * -- With EL distribution -- * #
 # Load data and restructure it into (91,41,32)
 DP_data_dQ_drdE_11_LS220 = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/LS220_dQ_drdE_eps_1e-11.txt')[:, 3].reshape(91,41,32)
 DP_data_dQ_drdE_13_LS220 = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/LS220_dQ_drdE_eps_1e-13.txt')[:, 3].reshape(91,41,32)
+DP_data_dQ_drdE_11_SFHo = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/SFHo_dQ_drdE_eps_1e-11.txt')[:, 3].reshape(91,41,32)
+DP_data_dQ_drdE_13_SFHo = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/SFHo_dQ_drdE_eps_1e-13.txt')[:, 3].reshape(91,41,32)
+DP_data_dQ_drdE_11_TF = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/TF_dQ_drdE_eps_1e-11.txt')[:, 3].reshape(91,41,32)
+DP_data_dQ_drdE_13_TF = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/TF_dQ_drdE_eps_1e-13.txt')[:, 3].reshape(91,41,32)
 
 mAp_axis = np.linspace(0,2.7,91)
 r_axis = np.linspace(12,20,41)
@@ -96,15 +120,27 @@ EL_axis = np.linspace(0,2.7,32)
 # eps = 1e-11 and 1e-13
 DP_data_dQ_drdE_11_LS220_interp = RegularGridInterpolator((mAp_axis, r_axis, EL_axis),DP_data_dQ_drdE_11_LS220,method='linear',bounds_error=True)
 DP_data_dQ_drdE_13_LS220_interp = RegularGridInterpolator((mAp_axis, r_axis, EL_axis),DP_data_dQ_drdE_13_LS220,method='linear',bounds_error=True)
+DP_data_dQ_drdE_11_SFHo_interp = RegularGridInterpolator((mAp_axis, r_axis, EL_axis),DP_data_dQ_drdE_11_SFHo,method='linear',bounds_error=True)
+DP_data_dQ_drdE_13_SFHo_interp = RegularGridInterpolator((mAp_axis, r_axis, EL_axis),DP_data_dQ_drdE_13_SFHo,method='linear',bounds_error=True)
+DP_data_dQ_drdE_11_TF_interp = RegularGridInterpolator((mAp_axis, r_axis, EL_axis),DP_data_dQ_drdE_11_TF,method='linear',bounds_error=True)
+DP_data_dQ_drdE_13_TF_interp = RegularGridInterpolator((mAp_axis, r_axis, EL_axis),DP_data_dQ_drdE_13_TF,method='linear',bounds_error=True)
 
 # * -- With EL distribution integrated -- * #
 # Load data and restructure it into (91,41,32)
 DP_data_dQ_dr_11_LS220 = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/LS220_dQ_dr_eps_1e-11.txt')[:, 2].reshape(91,41)
 DP_data_dQ_dr_13_LS220 = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/LS220_dQ_dr_eps_1e-13.txt')[:, 2].reshape(91,41)
+DP_data_dQ_dr_11_SFHo = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/SFHo_dQ_dr_eps_1e-11.txt')[:, 2].reshape(91,41)
+DP_data_dQ_dr_13_SFHo = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/SFHo_dQ_dr_eps_1e-13.txt')[:, 2].reshape(91,41)
+DP_data_dQ_dr_11_TF = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/TF_dQ_dr_eps_1e-11.txt')[:, 2].reshape(91,41)
+DP_data_dQ_dr_13_TF = np.loadtxt(BASE_DIR / 'dp_luminosity/time_integrated/TF_dQ_dr_eps_1e-13.txt')[:, 2].reshape(91,41)
 
 # eps = 1e-11 and 1e-13
 DP_data_dQ_dr_11_LS220_interp = RegularGridInterpolator((mAp_axis, r_axis),DP_data_dQ_dr_11_LS220,method='linear',bounds_error=True)
 DP_data_dQ_dr_13_LS220_interp = RegularGridInterpolator((mAp_axis, r_axis),DP_data_dQ_dr_13_LS220,method='linear',bounds_error=True)
+DP_data_dQ_dr_11_SFHo_interp = RegularGridInterpolator((mAp_axis, r_axis),DP_data_dQ_dr_11_SFHo,method='linear',bounds_error=True)
+DP_data_dQ_dr_13_SFHo_interp = RegularGridInterpolator((mAp_axis, r_axis),DP_data_dQ_dr_13_SFHo,method='linear',bounds_error=True)
+DP_data_dQ_dr_11_TF_interp = RegularGridInterpolator((mAp_axis, r_axis),DP_data_dQ_dr_11_TF,method='linear',bounds_error=True)
+DP_data_dQ_dr_13_TF_interp = RegularGridInterpolator((mAp_axis, r_axis),DP_data_dQ_dr_13_TF,method='linear',bounds_error=True)
 
 
 ### ---------- Useful Functions ---------- ###
@@ -216,18 +252,32 @@ def kappa(rho, T):
     
     return 10**log_k
 
-def average_stopping_time(eps,mAp,r,SN_profile):
+def average_stopping_time(eps,mAp,r,SN_profile='LS220'):
     logeps = np.log10(eps)
     logmAp = np.log10(mAp)
     logr = np.log10(r)
-    avg_time = 10**AvgStopTime_LS220_interp((logeps,logmAp,logr))
+    if SN_profile == 'LS220':
+        avg_time = 10**AvgStopTime_LS220_interp((logeps,logmAp,logr))
+    elif SN_profile == 'SFHo':
+        avg_time = 10**AvgStopTime_SFHo_interp((logeps,logmAp,logr))
+    elif SN_profile == 'TF':
+        avg_time = 10**AvgStopTime_TF_interp((logeps,logmAp,logr))
+    else:
+        raise ValueError('\'SN_profile\' incorrect')
     return avg_time
 
-def average_efficiency(eps,mAp,r,SN_profile):
+def average_efficiency(eps,mAp,r,SN_profile='LS220'):
     logeps = np.log10(eps)
     logmAp = np.log10(mAp)
     logr = np.log10(r)
-    avg_eff = 10**AvgEfficiency_LS220_interp((logeps,logmAp,logr))
+    if SN_profile == 'LS220':
+        avg_eff = 10**AvgEfficiency_LS220_interp((logeps,logmAp,logr))
+    elif SN_profile == 'SFHo':
+        avg_eff = 10**AvgEfficiency_SFHo_interp((logeps,logmAp,logr))
+    elif SN_profile == 'TF':
+        avg_eff = 10**AvgEfficiency_TF_interp((logeps,logmAp,logr))
+    else:
+        raise ValueError('\'SN_profile\' incorrect')
     return avg_eff
 
 def tau(r,T,R_max=3e14,SN_name='SN 2023ixf'):
@@ -271,6 +321,38 @@ def dQ_dr_LS220(eps,mAp,r):
         dQ = scaling * 10**DP_data_dQ_dr_11_LS220_interp(params)
     return dQ
 
+def dQ_dr_SFHo(eps,mAp,r):
+    mAp = np.log10(mAp)
+    try:
+        # try reference eps = 1e-13 first
+        scaling = (eps / 1e-13)**4
+        r_p = np.log10((eps / 1e-13)**2 * r)
+        params = (mAp,r_p)
+        dQ = scaling * 10**DP_data_dQ_dr_13_SFHo_interp(params)
+    except:
+        # try reference eps = 1e-13
+        scaling = (eps / 1e-11)**4
+        r_p = np.log10((eps / 1e-11)**2 * r)
+        params = (mAp,r_p)
+        dQ = scaling * 10**DP_data_dQ_dr_11_SFHo_interp(params)
+    return dQ
+
+def dQ_dr_TF(eps,mAp,r):
+    mAp = np.log10(mAp)
+    try:
+        # try reference eps = 1e-13 first
+        scaling = (eps / 1e-13)**4
+        r_p = np.log10((eps / 1e-13)**2 * r)
+        params = (mAp,r_p)
+        dQ = scaling * 10**DP_data_dQ_dr_13_TF_interp(params)
+    except:
+        # try reference eps = 1e-13
+        scaling = (eps / 1e-11)**4
+        r_p = np.log10((eps / 1e-11)**2 * r)
+        params = (mAp,r_p)
+        dQ = scaling * 10**DP_data_dQ_dr_11_TF_interp(params)
+    return dQ
+
 def dQ_drdE_LS220(eps,mAp,r,EL):
     mAp = np.log10(mAp)
     EL = np.log10(EL)
@@ -286,6 +368,40 @@ def dQ_drdE_LS220(eps,mAp,r,EL):
         r_p = np.log10((eps / 1e-11)**2 * r)
         params = (mAp,r_p,EL)
         dQ = scaling * 10**DP_data_dQ_drdE_11_LS220_interp(params)
+    return dQ
+
+def dQ_drdE_SFHo(eps,mAp,r,EL):
+    mAp = np.log10(mAp)
+    EL = np.log10(EL)
+    try:
+        # try reference eps = 1e-13 first
+        scaling = (eps / 1e-13)**4
+        r_p = np.log10((eps / 1e-13)**2 * r)
+        params = (mAp,r_p,EL)
+        dQ = scaling * 10**DP_data_dQ_drdE_13_SFHo_interp(params)
+    except:
+        # try reference eps = 1e-11
+        scaling = (eps / 1e-11)**4
+        r_p = np.log10((eps / 1e-11)**2 * r)
+        params = (mAp,r_p,EL)
+        dQ = scaling * 10**DP_data_dQ_drdE_11_SFHo_interp(params)
+    return dQ
+
+def dQ_drdE_TF(eps,mAp,r,EL):
+    mAp = np.log10(mAp)
+    EL = np.log10(EL)
+    try:
+        # try reference eps = 1e-13 first
+        scaling = (eps / 1e-13)**4
+        r_p = np.log10((eps / 1e-13)**2 * r)
+        params = (mAp,r_p,EL)
+        dQ = scaling * 10**DP_data_dQ_drdE_13_TF_interp(params)
+    except:
+        # try reference eps = 1e-11
+        scaling = (eps / 1e-11)**4
+        r_p = np.log10((eps / 1e-11)**2 * r)
+        params = (mAp,r_p,EL)
+        dQ = scaling * 10**DP_data_dQ_drdE_11_TF_interp(params)
     return dQ
 
 def dQ_dr(eps,mAp,r,SN_profile='LS220'):
@@ -311,9 +427,9 @@ def dQ_dr(eps,mAp,r,SN_profile='LS220'):
     if SN_profile == 'LS220':
         return dQ_dr_LS220(eps,mAp,r)
     elif SN_profile == 'TF':
-        pass
+        return dQ_dr_TF(eps,mAp,r)
     elif SN_profile == 'SFHo':
-        pass
+        return dQ_dr_SFHo(eps,mAp,r)
     else:
         raise ValueError('Option \'SN_name\' must be one of LS220, TF and SFHo')
 
@@ -342,9 +458,9 @@ def dQ_drdE(eps,mAp,r,EL,SN_profile='LS220'):
     if SN_profile == 'LS220':
         return dQ_drdE_LS220(eps,mAp,r,EL)
     elif SN_profile == 'TF':
-        pass
+        return dQ_drdE_TF(eps,mAp,r,EL)
     elif SN_profile == 'SFHo':
-        pass
+        return dQ_drdE_SFHo(eps,mAp,r,EL)
     else:
         raise ValueError('Option \'SN_name\' must be one of LS220, TF and SFHo')
     
@@ -620,9 +736,9 @@ def u_interp(r,T,include_rad=True,SN_name='SN 2023ixf'):
     logr = np.log10(r)
     logT = np.log10(T)
     if include_rad is True:
-        return 10**SN2023ixf_u_tot_interp((logr,logT))
+        return 10**SN2023ixf_LS220_u_tot_interp((logr,logT))
     else:
-        return 10**SN2023ixf_u_gas_interp((logr,logT))
+        return 10**SN2023ixf_LS220_u_gas_interp((logr,logT))
 
 def average_stopping_time_numerical(r,eps,mAp,SN_name='SN 2023ixf',SN_profile='LS220'):
     """
