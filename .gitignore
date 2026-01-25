@@ -1,2 +1,5 @@
 .DS_Store
 .ipynb_checkpoints
+src/__pycache__/csm_dp.cpython-312.pyc
+src/__pycache__/density.cpython-312.pyc
+*.pyc
