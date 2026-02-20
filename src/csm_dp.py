@@ -23,7 +23,7 @@ EV_TO_ERG = 1.60218e-12
 # In the following we use realistic CSM density from Zimmerman+ Nature 627, 762 (2024)
 rho_SN2020tlf_data = np.log10(np.loadtxt(BASE_DIR / 'density/SN2020tlf.txt').T)
 rho_SN2023ixf_data = np.log10(np.loadtxt(BASE_DIR / 'density/SN2023ixf.txt').T)
-rho_SN2023ixf_sharp_data = np.log10(np.loadtxt(BASE_DIR / 'density/SN2023ixf_sharp.txt').T)
+rho_SN2023ixf_sharp_data = np.log10(np.loadtxt(BASE_DIR / 'density/SN2023ixf_Galan.txt').T)
 rho_SN2024ggi_data = np.log10(np.loadtxt(BASE_DIR / 'density/SN2024ggi.txt').T)
 # Interp in log10 scale
 rho_2020tlf_interp = interp1d(rho_SN2020tlf_data[0],rho_SN2020tlf_data[1],kind='linear',bounds_error=False,fill_value=np.nan)
@@ -40,11 +40,17 @@ SN_names = ['SN 2020tlf','SN 2023ixf','SN 2024ggi']
 SN2023ixf_logu_gas = np.loadtxt(BASE_DIR / 'internal_energy/u_gas_only.txt')
 SN2023ixf_logu_tot = np.loadtxt(BASE_DIR / 'internal_energy/u_total.txt')
 
+SN2023ixf_s_logu_gas = np.loadtxt(BASE_DIR / 'internal_energy/u_gas_only_SN 2023ixf s.txt')
+SN2023ixf_s_logu_tot = np.loadtxt(BASE_DIR / 'internal_energy/u_total_SN 2023ixf s.txt')
+
 logT_axis = np.log10(np.logspace(0,15,600))
 logR_axis = np.log10(np.logspace(np.log10(5e13),np.log10(8e15),300))
 
 SN2023ixf_LS220_u_gas_interp = RegularGridInterpolator((logR_axis,logT_axis),SN2023ixf_logu_gas,method='linear', bounds_error=False, fill_value=np.nan)
 SN2023ixf_LS220_u_tot_interp = RegularGridInterpolator((logR_axis,logT_axis),SN2023ixf_logu_tot,method='linear', bounds_error=False, fill_value=np.nan)
+
+SN2023ixf_s_LS220_u_gas_interp = RegularGridInterpolator((logR_axis,logT_axis),SN2023ixf_s_logu_gas,method='linear', bounds_error=False, fill_value=np.nan)
+SN2023ixf_s_LS220_u_tot_interp = RegularGridInterpolator((logR_axis,logT_axis),SN2023ixf_s_logu_tot,method='linear', bounds_error=False, fill_value=np.nan)
 
 # --- Opacity --- #
 # Low T opacity table from Ferguson et al, T < 10000 K
@@ -68,14 +74,24 @@ CSDA_electron = np.loadtxt(BASE_DIR / 'CSDA/electron.txt',skiprows=6).T
 CSDA_e_H = interp1d(np.log10(CSDA_electron[0]),np.log10(CSDA_electron[-2])) # hydrogen
 CSDA_e_He = interp1d(np.log10(CSDA_electron[0]),np.log10(CSDA_electron[-1])) # helium
 
+# --- Electron stopping power --- $
+stop_power_e_H = np.loadtxt(BASE_DIR / 'stopping_power/electron_H.txt',skiprows=8).T
+stop_power_e_He = np.loadtxt(BASE_DIR / 'stopping_power/electron_He.txt',skiprows=8).T
+# interpolate, in log-scale
+stop_power_e_H_interp = interp1d(np.log10(stop_power_e_H[0]),np.log10(stop_power_e_H[-1]))
+stop_power_e_He_interp = interp1d(np.log10(stop_power_e_He[0]),np.log10(stop_power_e_He[-1]))
+
 # # --- Average stopping time and efficiency --- #
 avg_stop_time_eff_LS220 = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_LS220.txt')
 avg_stop_time_eff_SFHo = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_SFHo.txt')
 avg_stop_time_eff_TF = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_TF.txt')
+avg_stop_time_eff_LS220_s = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_LS220_SN 2023ixf s.txt')
+
 
 logStopTime_LS220 = np.log10(avg_stop_time_eff_LS220[:, 3].reshape(7,50,35))
 logStopTime_SFHo = np.log10(avg_stop_time_eff_SFHo[:, 3].reshape(7,50,35))
 logStopTime_TF = np.log10(avg_stop_time_eff_TF[:, 3].reshape(7,50,35))
+logStopTime_LS220_s = np.log10(avg_stop_time_eff_LS220_s[:, 3].reshape(7,50,35))
 
 AvgEfficiency_LS220 = avg_stop_time_eff_LS220[:, 4].reshape(7,50,35)
 AvgEfficiency_LS220[AvgEfficiency_LS220  < 1e-50] = 1e-50 # some efficiency could be close to 0 and cannot be taken log10
@@ -89,6 +105,10 @@ AvgEfficiency_TF = avg_stop_time_eff_TF[:, 4].reshape(7,50,35)
 AvgEfficiency_TF[AvgEfficiency_TF  < 1e-50] = 1e-50 # some efficiency could be close to 0 and cannot be taken log10
 logEfficiency_TF = np.log10(AvgEfficiency_TF)
 
+AvgEfficiency_LS220_s = avg_stop_time_eff_LS220_s[:, 4].reshape(7,50,35)
+AvgEfficiency_LS220_s[AvgEfficiency_LS220_s  < 1e-50] = 1e-50 # some efficiency could be close to 0 and cannot be taken log10
+logEfficiency_LS220_s = np.log10(AvgEfficiency_LS220_s)
+
 # define axis
 logeps_axis = np.log10([1.5e-14,3.3e-14,1e-13,3.3e-13,1e-12,3.3e-12,1e-11])
 logmAp_axis = np.log10(np.logspace(2.99922e-02,2.7,50))
@@ -96,6 +116,9 @@ logr_axis = np.log10(np.logspace(np.log10(5e13),np.log10(8e15),35))
 # interpolation
 AvgStopTime_LS220_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logStopTime_LS220,method='linear', bounds_error=False, fill_value=np.nan)
 AvgEfficiency_LS220_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logEfficiency_LS220 ,method='linear', bounds_error=False, fill_value=np.nan)
+
+AvgStopTime_LS220_s_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logStopTime_LS220_s,method='linear', bounds_error=False, fill_value=np.nan)
+AvgEfficiency_LS220_s_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logEfficiency_LS220_s ,method='linear', bounds_error=False, fill_value=np.nan)
 
 AvgStopTime_SFHo_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logStopTime_SFHo,method='linear', bounds_error=False, fill_value=np.nan)
 AvgEfficiency_SFHo_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logEfficiency_SFHo ,method='linear', bounds_error=False, fill_value=np.nan)
@@ -258,6 +281,8 @@ def average_stopping_time(eps,mAp,r,SN_profile='LS220'):
     logr = np.log10(r)
     if SN_profile == 'LS220':
         avg_time = 10**AvgStopTime_LS220_interp((logeps,logmAp,logr))
+    elif SN_profile == 'LS220 s':
+        avg_time = 10**AvgStopTime_LS220_s_interp((logeps,logmAp,logr))
     elif SN_profile == 'SFHo':
         avg_time = 10**AvgStopTime_SFHo_interp((logeps,logmAp,logr))
     elif SN_profile == 'TF':
@@ -272,6 +297,8 @@ def average_efficiency(eps,mAp,r,SN_profile='LS220'):
     logr = np.log10(r)
     if SN_profile == 'LS220':
         avg_eff = 10**AvgEfficiency_LS220_interp((logeps,logmAp,logr))
+    elif SN_profile == 'LS220 s':
+        avg_eff = 10**AvgEfficiency_LS220_s_interp((logeps,logmAp,logr))
     elif SN_profile == 'SFHo':
         avg_eff = 10**AvgEfficiency_SFHo_interp((logeps,logmAp,logr))
     elif SN_profile == 'TF':
@@ -579,7 +606,32 @@ def electron_CSDA(EL,target='H'):
         raise ValueError('\'target\' must be either \'H\' or \'He\'.')
     return sp
 
-def CSM_electron_stopping_length(r,EL,SN_name='SN 2023ixf'):
+def stopping_power_electron(Ek,target='H'):
+    """
+    Stopping power for electron in different target
+
+    Parameters
+    ----------
+    Ek : scalar
+        Electron kinetic energy, MeV (valid from 0.01 MeV to 1000 MeV)
+    target : str
+        Target that the electron is interacting with, 'H' or 'He'
+
+    Returns
+    -------
+    out : scalar
+        Electron stopping power, MeV cm^2/g
+    """
+    logEk = np.log10(Ek)
+    if target == 'H':
+        sp = 10**(stop_power_e_H_interp(logEk))
+    elif target == 'He':
+        sp = 10**(stop_power_e_He_interp(logEk))
+    else:
+        raise ValueError('\'target\' must be either \'H\' or \'He\'.')
+    return sp
+
+def CSM_electron_stopping_length(r,EL,SN_name='SN 2023ixf',CSDA=True,E0=0.5):
     """
     Electron stopping length in the layer of CSM
 
@@ -591,6 +643,10 @@ def CSM_electron_stopping_length(r,EL,SN_name='SN 2023ixf'):
         Electron kinetic energy, MeV (valid from 0.01 MeV to 1000 MeV)
     SN_name : str
         Name of the SN
+    CSDA : bool
+        Using CSDA to estimate the stopping length
+    E0 : scalar
+        The lowest energy that can be considered electron is stopped, MeV
 
     Returns
     -------
@@ -598,11 +654,20 @@ def CSM_electron_stopping_length(r,EL,SN_name='SN 2023ixf'):
         Electron stopping length at layer r, cm
     """
     rho = CSM_density(r,SN_name) # g/cm^3
-    inv_R_H = 1 / electron_CSDA(EL,target='H') # g/cm^2
-    inv_R_He = 1 / electron_CSDA(EL,target='He') # g/cm^3
-    inv_R_mix = 0.7 * inv_R_H + 0.3 * inv_R_He
-    # get stopping length
-    L = 1 / inv_R_mix / rho
+    if CSDA is True:
+        inv_R_H = 1 / electron_CSDA(EL,target='H') # g/cm^2
+        inv_R_He = 1 / electron_CSDA(EL,target='He') # g/cm^3
+        inv_R_mix = 0.7 * inv_R_H + 0.3 * inv_R_He
+        # get stopping length
+        L = 1 / inv_R_mix / rho
+    elif CSDA is False:
+        def _one_over_S_mix_rho(EL):
+            S_H = stopping_power_electron(EL,target='H')
+            S_He = stopping_power_electron(EL,target='He')
+            return 1 / (S_H * 0.7 + S_He * 0.3) / rho
+        L = quad(_one_over_S_mix_rho,EL,E0)[0]    
+    else:
+        raise ValueError('\'CSDA\' must be either True or False.')
     return L
 
 def Saha_K(T, chi_ev, Z_low, Z_high):
@@ -735,10 +800,18 @@ def u_total(r,T,include_rad=True,SN_name='SN 2023ixf'):
 def u_interp(r,T,include_rad=True,SN_name='SN 2023ixf'):
     logr = np.log10(r)
     logT = np.log10(T)
-    if include_rad is True:
-        return 10**SN2023ixf_LS220_u_tot_interp((logr,logT))
+    if SN_name == 'SN 2023ixf':
+        if include_rad is True:
+            return 10**SN2023ixf_LS220_u_tot_interp((logr,logT))
+        else:
+            return 10**SN2023ixf_LS220_u_gas_interp((logr,logT))
+    elif SN_name == 'SN 2023ixf s':
+        if include_rad is True:
+            return 10**SN2023ixf_s_LS220_u_tot_interp((logr,logT))
+        else:
+            return 10**SN2023ixf_s_LS220_u_gas_interp((logr,logT))
     else:
-        return 10**SN2023ixf_LS220_u_gas_interp((logr,logT))
+        raise ValueError('Wrong SN name')
 
 def average_stopping_time_numerical(r,eps,mAp,SN_name='SN 2023ixf',SN_profile='LS220'):
     """
