@@ -510,7 +510,7 @@ def radiative_loss_function(T):
     
     # 1. Define conditions
     conds = [
-        (logT > 1.0)     & (logT <= 1.422),
+        (logT >= 1.0)     & (logT <= 1.422),
         (logT > 1.422)   & (logT <= 2.806),
         (logT > 2.806)   & (logT <= 3.980),
         (logT > 3.980)   & (logT <= 4.177),
@@ -754,6 +754,24 @@ def u_gas(T, rho):
                 
     return u_kinetic + u_ionization
 
+def u_gas_no_ion(T, rho):
+    """
+    No ionization
+    """
+    elements = {
+        'H':  {'m': 1.67e-24, 'X': 0.70},
+        'He': {'m': 6.64e-24, 'X': 0.28},
+        'C':  {'m': 1.99e-23, 'X': 0.006},
+        'N':  {'m': 2.32e-23, 'X': 0.004},
+        'O':  {'m': 2.65e-23, 'X': 0.006},
+        'Fe': {'m': 9.27e-23, 'X': 0.004}
+    }
+      
+    n_A = {name: (data['X'] * rho / data['m']) for name, data in elements.items()}
+    ne = 0.0
+    u_kinetic = 1.5 * sum(n_A.values()) * KB * T
+    return u_kinetic
+
 def u_rad(T):
     """
     The energy density stored in the radiation for a given temperature, assuming LTE
@@ -915,6 +933,22 @@ def get_T(r,eps,mAp,efficiency=1,include_rad=True,SN_name='SN 2023ixf',SN_profil
             u = u_interp(r,T,include_rad,SN_name)
         else:
             u = u_total(r,T,include_rad,SN_name)
+        return dQ - u #u_total(r,T,include_rad,SN_name)
+    
+    log_bracket = np.log10(bracket) # initial guess on T in log10 valued
+    sol = root_scalar(_f,method='brentq', bracket=log_bracket,xtol=xtol,rtol=rtol)
+    sol_T = 10**sol.root
+    return sol_T,sol.converged,np.abs(_f(sol.root)/dQ) * 100
+
+
+def get_T_no_ion(r,eps,mAp,efficiency=1,include_rad=True,SN_name='SN 2023ixf',SN_profile='LS220',bracket=[1,1e15],xtol=None,rtol=None,interp_u=True):
+    #logT0 = np.log10(T0)
+    dQ = dQ_dV(r,eps,mAp,SN_name,SN_profile) * efficiency # dQ/dV deposited at layer r, erg/cm^3
+    rho = CSM_density(r,SN_name)
+    
+    def _f(logT):
+        T = 10**logT
+        u = u_gas_no_ion(T, rho)
         return dQ - u #u_total(r,T,include_rad,SN_name)
     
     log_bracket = np.log10(bracket) # initial guess on T in log10 valued
