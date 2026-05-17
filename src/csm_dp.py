@@ -46,6 +46,7 @@ SN2023ixf_s_logu_tot = np.loadtxt(BASE_DIR / 'internal_energy/u_total_SN 2023ixf
 logT_axis = np.log10(np.logspace(0,15,600))
 logR_axis = np.log10(np.logspace(np.log10(5e13),np.log10(8e15),300))
 
+# The internal energy only depends on the CSM profile not on SN EoS model
 SN2023ixf_LS220_u_gas_interp = RegularGridInterpolator((logR_axis,logT_axis),SN2023ixf_logu_gas,method='linear', bounds_error=False, fill_value=np.nan)
 SN2023ixf_LS220_u_tot_interp = RegularGridInterpolator((logR_axis,logT_axis),SN2023ixf_logu_tot,method='linear', bounds_error=False, fill_value=np.nan)
 
@@ -86,12 +87,14 @@ avg_stop_time_eff_LS220 = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_avera
 avg_stop_time_eff_SFHo = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_SFHo.txt')
 avg_stop_time_eff_TF = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_TF.txt')
 avg_stop_time_eff_LS220_s = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_LS220_SN 2023ixf s.txt')
+avg_stop_time_eff_SFHo_s = np.loadtxt(BASE_DIR / 'average_stopping_time/CSM_average_stoptime_efficiency_SFHo_SN 2023ixf s.txt')
 
 
 logStopTime_LS220 = np.log10(avg_stop_time_eff_LS220[:, 3].reshape(7,50,35))
 logStopTime_SFHo = np.log10(avg_stop_time_eff_SFHo[:, 3].reshape(7,50,35))
 logStopTime_TF = np.log10(avg_stop_time_eff_TF[:, 3].reshape(7,50,35))
 logStopTime_LS220_s = np.log10(avg_stop_time_eff_LS220_s[:, 3].reshape(7,50,35))
+logStopTime_SFHo_s = np.log10(avg_stop_time_eff_SFHo_s[:, 3].reshape(7,50,35))
 
 AvgEfficiency_LS220 = avg_stop_time_eff_LS220[:, 4].reshape(7,50,35)
 AvgEfficiency_LS220[AvgEfficiency_LS220  < 1e-50] = 1e-50 # some efficiency could be close to 0 and cannot be taken log10
@@ -109,6 +112,10 @@ AvgEfficiency_LS220_s = avg_stop_time_eff_LS220_s[:, 4].reshape(7,50,35)
 AvgEfficiency_LS220_s[AvgEfficiency_LS220_s  < 1e-50] = 1e-50 # some efficiency could be close to 0 and cannot be taken log10
 logEfficiency_LS220_s = np.log10(AvgEfficiency_LS220_s)
 
+AvgEfficiency_SFHo_s = avg_stop_time_eff_SFHo_s[:, 4].reshape(7,50,35)
+AvgEfficiency_SFHo_s[AvgEfficiency_SFHo_s  < 1e-50] = 1e-50 # some efficiency could be close to 0 and cannot be taken log10
+logEfficiency_SFHo_s = np.log10(AvgEfficiency_SFHo_s)
+
 # define axis
 logeps_axis = np.log10([1.5e-14,3.3e-14,1e-13,3.3e-13,1e-12,3.3e-12,1e-11])
 logmAp_axis = np.log10(np.logspace(2.99922e-02,2.7,50))
@@ -119,6 +126,9 @@ AvgEfficiency_LS220_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,lo
 
 AvgStopTime_LS220_s_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logStopTime_LS220_s,method='linear', bounds_error=False, fill_value=np.nan)
 AvgEfficiency_LS220_s_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logEfficiency_LS220_s ,method='linear', bounds_error=False, fill_value=np.nan)
+
+AvgStopTime_SFHo_s_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logStopTime_SFHo_s,method='linear', bounds_error=False, fill_value=np.nan)
+AvgEfficiency_SFHo_s_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logEfficiency_SFHo_s ,method='linear', bounds_error=False, fill_value=np.nan)
 
 AvgStopTime_SFHo_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logStopTime_SFHo,method='linear', bounds_error=False, fill_value=np.nan)
 AvgEfficiency_SFHo_interp = RegularGridInterpolator((logeps_axis,logmAp_axis,logr_axis),logEfficiency_SFHo ,method='linear', bounds_error=False, fill_value=np.nan)
@@ -283,6 +293,8 @@ def average_stopping_time(eps,mAp,r,SN_profile='LS220'):
         avg_time = 10**AvgStopTime_LS220_interp((logeps,logmAp,logr))
     elif SN_profile == 'LS220 s':
         avg_time = 10**AvgStopTime_LS220_s_interp((logeps,logmAp,logr))
+    elif SN_profile == 'SFHo s':
+        avg_time = 10**AvgStopTime_SFHo_s_interp((logeps,logmAp,logr))
     elif SN_profile == 'SFHo':
         avg_time = 10**AvgStopTime_SFHo_interp((logeps,logmAp,logr))
     elif SN_profile == 'TF':
@@ -299,6 +311,8 @@ def average_efficiency(eps,mAp,r,SN_profile='LS220'):
         avg_eff = 10**AvgEfficiency_LS220_interp((logeps,logmAp,logr))
     elif SN_profile == 'LS220 s':
         avg_eff = 10**AvgEfficiency_LS220_s_interp((logeps,logmAp,logr))
+    elif SN_profile == 'SFHo s':
+        avg_eff = 10**AvgEfficiency_SFHo_s_interp((logeps,logmAp,logr))
     elif SN_profile == 'SFHo':
         avg_eff = 10**AvgEfficiency_SFHo_interp((logeps,logmAp,logr))
     elif SN_profile == 'TF':
@@ -631,7 +645,7 @@ def stopping_power_electron(Ek,target='H'):
         raise ValueError('\'target\' must be either \'H\' or \'He\'.')
     return sp
 
-def CSM_electron_stopping_length(r,EL,SN_name='SN 2023ixf',CSDA=True,E0=0.5):
+def CSM_electron_stopping_length(r,EL,SN_name='SN 2023ixf',CSDA=True,E0=0.5,step='middle'):
     """
     Electron stopping length in the layer of CSM
 
@@ -653,7 +667,14 @@ def CSM_electron_stopping_length(r,EL,SN_name='SN 2023ixf',CSDA=True,E0=0.5):
     out : scalar
         Electron stopping length at layer r, cm
     """
-    rho = CSM_density(r,SN_name) # g/cm^3
+    if step == 'middle':
+        rdr = r
+    elif step == 'right':
+        rdr = r + 0.5*r
+    elif step == 'left':
+        rdr = r -0.5*r
+    
+    rho = CSM_density(rdr,SN_name) # g/cm^3
     if CSDA is True:
         inv_R_H = 1 / electron_CSDA(EL,target='H') # g/cm^2
         inv_R_He = 1 / electron_CSDA(EL,target='He') # g/cm^3
